@@ -6,11 +6,21 @@ set -x
 ln -sf /usr/share/zoneinfo/UTC /etc/localtime
 sed -i -e 's/^#\(en_US.UTF-8\)/\1/' /etc/locale.gen
 locale-gen
+echo 'LANG=en_US.UTF-8' > /etc/locale.conf
 
 # setting vagrant user credentials
 echo -e 'vagrant\nvagrant' | passwd
 useradd -m -U vagrant
 echo -e 'vagrant\nvagrant' | passwd vagrant
+
+# setting automatic authentication for any action requiring admin rights via Polkit
+cat <<EOF > /etc/polkit-1/rules.d/49-nopasswd_global.rules
+polkit.addRule(function(action, subject) {
+    if (subject.isInGroup("vagrant")) {
+        return polkit.Result.YES;
+    }
+});
+EOF
 
 # setting sudo for vagrant user
 cat <<EOF > /etc/sudoers.d/vagrant
